@@ -2582,14 +2582,15 @@ void CMonitorState::ensureBufferPresent() {
         return;
     }
 
-    if (STATE.buffer) {
+    // the size matters too: after a mode change, the last frame's buffer may not cover the new mode, which drivers may reject
+    if (STATE.buffer && STATE.buffer->size == m_owner->m_output->swapchain->currentOptions().size) {
         if (const auto params = STATE.buffer->dmabuf(); params.success && params.format == m_owner->m_drmFormat)
             return;
     }
 
     // this is required for modesetting being possible and might be missing in case of first tests in the renderer
     // where we test modes and buffers
-    LOG(Log::DEBUG, "CMonitorState::ensureBufferPresent: no buffer or mismatched format, attaching one from the swapchain for modeset being possible");
+    LOG(Log::DEBUG, "CMonitorState::ensureBufferPresent: no buffer or mismatched format or size, attaching one from the swapchain for modeset being possible");
     m_owner->m_output->state->setBuffer(m_owner->m_output->swapchain->next(nullptr));
     m_owner->m_output->swapchain->rollback(); // restore the counter, don't advance the swapchain
 }
